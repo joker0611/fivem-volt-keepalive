@@ -1,0 +1,32 @@
+name: keep-bot-awake
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "4,14,24,34,44,54 * * * *"
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Ping the bot every 5 minutes
+        env:
+          URL: https://fivem-volt-bot1.onrender.com/health
+          INTERVAL_SECONDS: "300"
+          DURATION_SECONDS: "20400"
+        run: |
+          set -uo pipefail
+          deadline=$(( SECONDS + DURATION_SECONDS ))
+          consecutive=0
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if curl --fail --silent --show-error --output /dev/null --max-time 120 "$URL"; then
+              consecutive=0
+              echo "$(date -u +%H:%M:%SZ) ok"
+            else
+              consecutive=$(( consecutive + 1 ))
+              echo "$(date -u +%H:%M:%SZ) failed ($consecutive)"
+              if [ "$consecutive" -ge 12 ]; then
+                exit 1
+              fi
+            fi
+            sleep "$INTERVAL_SECONDS"
+          done
